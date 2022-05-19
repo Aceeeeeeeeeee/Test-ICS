@@ -1,0 +1,214 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+
+namespace CreateOrder
+{
+    public partial class CreateOrder : Form, Form
+    { 
+        DataContext context = new DataContext();
+        List<PRODUCT> listProduct = new List<PRODUCT>();   
+        List<ORDER> listOrder = new List<ORDER>();  
+        List<v_ReportOrderByProduct> v_ReportOrderByProduct List<v_ReportOrderByProduct>();
+
+        public CreateOrder()
+        {
+            InitializeComponent();
+        }
+
+        public void Search()
+        {
+            throw new NotImplementedException();
+        }
+
+        private void CreateOrder_Load(object sender, EventArgs e)
+        {
+            getProduct();
+        }     
+        private void getProduct()
+        {
+            try
+            {                 
+                DataContext _context = new DataContext();
+                listProduct = _context.PRODUCT.Tolist();            
+            }
+            catch (Exception ex)
+            {
+                EX = ex.Message;
+            }
+        }
+        private void getTocbbGender()
+        {
+            try
+            {          
+                 List<Gender> _listGender = new List<Gender>();
+                 _listGender = listProduct.Group(s=> s.Gender).toList();
+
+                 cbbGender.DataSource = _listGender;
+                 cbbGender.DisplayMember = "Gender";
+                 cbbGender.ValueMember = "Gender";
+                 cbbGender.SelectedIndex = -1;          
+            }
+            catch (Exception ex)
+            {
+                EX = ex.Message;
+            }
+        }
+
+        private void getTocbbCategory()
+        {
+            try
+            {          
+                 List<Category> _listCategory = new List<Category>();
+                 _listCategory = listProduct.Group(s=> s.Category).toList();
+
+                 cbbCategory.DataSource = _listCategory;
+                 cbbCategory.DisplayMember = "Category";
+                 cbbCategory.ValueMember = "Category";
+                 cbbCategory.SelectedIndex = -1;          
+            }
+            catch (Exception ex)
+            {
+                EX = ex.Message;
+            }
+        }
+
+        private void getTocbbSize()
+        {
+            try
+            {          
+                 List<Size> _listSize = new List<Size>();
+                 _listSize = listProduct.Group(s=> s.Size).toList();
+
+                 cbbSize.DataSource = _listSize;
+                 cbbSize.DisplayMember = "Size";
+                 cbbSize.ValueMember = "Size";
+                 cbbSize.SelectedIndex = -1;          
+            }
+            catch (Exception ex)
+            {
+                EX = ex.Message;
+            }
+        }
+
+        private void btnAdddata_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                AddDataTolist();
+            }
+            catch (Exception ex)
+            {
+                EX = ex.Message;
+                MessageBox.Show("ระบบมีปัญหา" + EX, CommonConstants.cosStdHeaderWarning, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }      
+
+         private void AddDataTolist()
+         {
+            try
+            {
+                if(chkbeforAdd())
+                {
+                    listOrder _tmp = new listOrder();
+                    _tmp.Gender = cbbGender.SelectedValue.ToString();
+                    _tmp.Category = cbbCategory.SelectedValue.ToString();
+                    _tmp.OrderDate = dtpDate.Value.Date;
+                    _tmp.Size = cbbSize.SelectedValue.ToString();
+                    _tmp.QTY = Convert.ToInt32(txtQty.Text);
+                    _tmp.Address = txtAddress.text;
+                    listOrder.Add(_tmp);
+                }
+            }
+            catch (Exception ex)
+            {
+                EX = ex.Message;
+                MessageBox.Show("ระบบมีปัญหา" + EX, CommonConstants.cosStdHeaderWarning, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+         }
+
+        privete bool chkbeforAdd()
+        {
+            try
+            {
+                if (cbbGender.SelectedIndex == -1)
+                {
+                   MessageBox.Show("กรุณาระบุ Gender ที่ต้องการ!!!", "คำเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                   return false;
+                }
+                if (cbbCategory.SelectedIndex == -1)
+                {
+                   MessageBox.Show("กรุณาระบุ Category ที่ต้องการ!!!", "คำเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                   return false;
+                }
+                if (cbbSize.SelectedIndex == -1)
+                {
+                   MessageBox.Show("กรุณาระบุ Size ที่ต้องการ!!!", "คำเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                   return false;
+                }
+                if (txtQty.text == null || "0")
+                {
+                     MessageBox.Show("กรุณากรอกจำนวนที่ต้องการเปิด Order", "คำเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }      
+                if (txtAddress.text == null)
+                {
+                     MessageBox.Show("กรุณากรอกที่อยู่ในการจัดส่ง", "คำเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }   
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }                  
+        } 
+        private void btnSavedata_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                DialogResult dialogResult = MessageBox.Show("คุณต้องการบันทึกข้อมูลหรือไม่?", "System", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (dialogResult == DialogResult.Yes)
+                {     
+                   saveData(listOrder);                                         
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+         public void saveData()
+        {
+            try
+            {
+                DataContext context = new DataContext();
+                if (context.Connection.State == ConnectionState.Open)
+                    context.Connection.Close();
+                context.Connection.Open();
+                dbTransaction = context.Connection.BeginTransaction();
+                context.Transaction = dbTransaction;
+                context.ORDER.InsertAllOnSubmit(listOrder);
+
+                context.SubmitChanges();
+                dbTransaction.Commit();
+            }
+            catch (Exception ex)
+            {
+                EX = ex.Message;
+                dbTransaction.Rollback();
+            }
+            finally
+            {
+                if (context != null)
+                    context.Dispose();            
+            }
+        }        
+    }   
+}
